@@ -2,8 +2,8 @@ package telran.java57.forum.posts.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import telran.java57.dto.PeriodDto;
-import telran.java57.forum.posts.dto.CommentDto;
+import telran.java57.forum.posts.dto.PeriodDto;
+import telran.java57.forum.posts.dto.NewCommentDto;
 import telran.java57.forum.posts.dto.NewPostDto;
 import telran.java57.forum.posts.dto.PostDto;
 import telran.java57.forum.posts.service.PostService;
@@ -44,8 +44,8 @@ public class PostController {
     }
 
     @PutMapping("/post/{postId}/comment/{user}")
-    public PostDto addComment(@PathVariable String postId, @PathVariable String user, @RequestBody CommentDto commentDto){
-        return postService.addComment(postId,user,commentDto);
+    public PostDto addComment(@PathVariable String postId, @PathVariable String user, @RequestBody NewCommentDto newCommentDto){
+        return postService.addComment(postId,user,newCommentDto);
     }
 
     @PostMapping("/posts/tags")
@@ -59,7 +59,7 @@ public class PostController {
     }
 
     @PutMapping("/post/{postId}/like")
-    public Integer addLike(@PathVariable String postId) {
-        return postService.addLike(postId);
+    public void addLike(@PathVariable String postId) {
+        postService.addLike(postId);
     }
 }

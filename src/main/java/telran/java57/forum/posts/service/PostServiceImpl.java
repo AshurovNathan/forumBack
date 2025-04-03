@@ -3,9 +3,9 @@ package telran.java57.forum.posts.service;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
-import telran.java57.dto.PeriodDto;
+import telran.java57.forum.posts.dto.PeriodDto;
 import telran.java57.forum.posts.dao.PostRepository;
-import telran.java57.forum.posts.dto.CommentDto;
+import telran.java57.forum.posts.dto.NewCommentDto;
 import telran.java57.forum.posts.dto.NewPostDto;
 import telran.java57.forum.posts.dto.PostDto;
 import telran.java57.forum.posts.dto.exception.PostNotFoundException;
@@ -68,9 +68,9 @@ public class PostServiceImpl implements PostService{
     }
 
     @Override
-    public PostDto addComment(String postId, String user, CommentDto commentDto) {
+    public PostDto addComment(String postId, String user, NewCommentDto newCommentDto) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new PostNotFoundException(postId));
-        Comment comment = new Comment(user,commentDto.getMessage());
+        Comment comment = new Comment(newCommentDto.getMessage(),user);
         post.addComment(comment);
         postRepository.save(post);
         return modelMapper.map(post,PostDto.class);
@@ -85,19 +85,16 @@ public class PostServiceImpl implements PostService{
 
     @Override
     public List<PostDto> findPostsByPeriod(PeriodDto periodDto) {
-        LocalDateTime from = LocalDateTime.parse(periodDto.getDateFrom()+"T00:00:00");
-        LocalDateTime to = LocalDateTime.parse(periodDto.getDateTo()+"T00:00:00");
-        return postRepository.findPostsByDateCreatedBetween(from,to)
+        return postRepository.findPostsByDateCreatedBetween(periodDto.getDateFrom(),periodDto.getDateTo())
                 .map(p -> modelMapper.map(p,PostDto.class))
                 .toList();
     }
 
     @Override
-    public Integer addLike(String postId) {
+    public void addLike(String postId) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new PostNotFoundException(postId));
         post.addLike();
         postRepository.save(post);
-        return post.getLikes();
     }
 
 
