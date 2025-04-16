@@ -33,6 +33,9 @@ public class Post {
         this.tags = tags;
     }
 
+    public <E> Post(String number, String title, String content, String user, LocalDateTime now, Set<E> tag1, int i, Object o) {
+    }
+
     public boolean addComment(Comment comment){
         return comments.add(comment);
     }

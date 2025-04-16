@@ -7,19 +7,24 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import telran.java57.forum.accounting.dao.UserAccountRepository;
-import telran.java57.forum.accounting.dto.exception.UserNotFoundException;
+import telran.java57.forum.accounting.model.Role;
 import telran.java57.forum.accounting.model.UserAccount;
+import telran.java57.forum.security.filter.model.User;
 
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Base64;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @Order(10)
 @RequiredArgsConstructor
 public class AuthenticationFilter implements Filter {
+
     final UserAccountRepository userAccountRepository;
 
     @Override
@@ -27,46 +32,50 @@ public class AuthenticationFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        try {
-            String[] credentials = getCredentials(request.getHeader("Authorization"));
-            UserAccount user = userAccountRepository.findById(credentials[0]).orElseThrow(UserNotFoundException::new);
-            String password = user.getPassword();
-
-            if (!BCrypt.checkpw(credentials[1], password)) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("Password is incorrect");
+        if (checkEndpoints(request.getMethod(), request.getServletPath())) {
+            try {
+                String[] credentials = getCredentials(request.getHeader("Authorization"));
+                UserAccount userAccount = userAccountRepository.findById(credentials[0]).orElseThrow(RuntimeException::new);
+                if (userAccount == null || !BCrypt.checkpw(credentials[1], userAccount.getPassword())) {
+                    throw new RuntimeException();
+                }
+                Set<String> roles = userAccount.getRoles().stream().map(Role::name).collect(Collectors.toSet());
+                request = new WrappedRequest(request, credentials[0],roles);
+            } catch (RuntimeException e) {
+                response.sendError(401);
                 return;
             }
-
-            request = new WrappedRequest(request, credentials[0]);
-
-            filterChain.doFilter(request, response);
-        } catch (UserNotFoundException e) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Login is incorrect.");
         }
 
+        filterChain.doFilter(request, response);
+    }
+
+    private boolean checkEndpoints(String method, String servletPath) {
+        return !(
+                (HttpMethod.POST.matches(method) && servletPath.matches("/account/register"))
+                || servletPath.matches("/forum/posts/.*")
+        );
     }
 
     private String[] getCredentials(String headerValue) {
-
         String token = headerValue.split(" ")[1];
         String decode = new String(Base64.getDecoder().decode(token));
-
         return decode.split(":");
     }
 
     private class WrappedRequest extends HttpServletRequestWrapper {
         private String login;
+        private Set<String> roles;
 
-        public WrappedRequest(HttpServletRequest request, String login) {
+        public WrappedRequest(HttpServletRequest request, String login,Set<String> roles) {
             super(request);
             this.login = login;
+            this.roles = roles;
         }
 
         @Override
-        public Principal getUserPrincipal(){
-            return () -> login;
+        public Principal getUserPrincipal() {
+            return new User(login,roles);
         }
     }
 }

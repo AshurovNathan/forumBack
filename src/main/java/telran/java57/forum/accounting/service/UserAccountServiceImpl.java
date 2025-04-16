@@ -21,6 +21,9 @@ public class UserAccountServiceImpl implements UserAccountService{
 
     @Override
     public UserDto register(UserRegisterDto userRegisterDto) {
+        if(userRegisterDto.getLogin().matches(".*[^a-zA-Z0-9].*")){
+            throw new IllegalArgumentException();
+        }
         if (userAccountRepository.existsById(userRegisterDto.getLogin())) {
             throw new UserExistsException();
         }
@@ -80,7 +83,10 @@ public class UserAccountServiceImpl implements UserAccountService{
     @Override
     public void changePassword(String login, String newPassword) {
         UserAccount userAccount = userAccountRepository.findById(login).orElseThrow(UserNotFoundException::new);
-        userAccount.setPassword(newPassword);
+        if(newPassword != null){
+            String hashedNewPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+            userAccount.setPassword(hashedNewPassword);
+        }
         userAccountRepository.save(userAccount);
     }
 
