@@ -9,7 +9,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import telran.java57.forum.accounting.model.Role;
 import telran.java57.forum.posts.dao.PostRepository;
-import telran.java57.forum.posts.model.Post;
 import telran.java57.forum.security.filter.model.User;
 
 import java.io.IOException;

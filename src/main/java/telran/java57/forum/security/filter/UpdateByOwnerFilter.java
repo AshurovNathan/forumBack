@@ -6,8 +6,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
-import telran.java57.forum.security.filter.model.User;
-
 import java.io.IOException;
 
 @Component
