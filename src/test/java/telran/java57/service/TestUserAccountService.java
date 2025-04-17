@@ -73,7 +73,7 @@ public class TestUserAccountService {
     void testUserRegisterWrongLogin(){
         UserRegisterDto userRegisterDto = new UserRegisterDto("@a!?","123","John","Doe");
 
-        assertThrows(IllegalArgumentException.class,() -> userAccountService.register(userRegisterDto));
+        assertThrows(UserExistsException.class,() -> userAccountService.register(userRegisterDto));
 
         verifyNoInteractions(userAccountRepository);
         verifyNoInteractions(modelMapper);

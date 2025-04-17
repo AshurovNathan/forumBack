@@ -22,7 +22,7 @@ public class UserAccountServiceImpl implements UserAccountService{
     @Override
     public UserDto register(UserRegisterDto userRegisterDto) {
         if(userRegisterDto.getLogin().matches(".*[^a-zA-Z0-9].*")){
-            throw new IllegalArgumentException();
+            throw new UserExistsException();
         }
         if (userAccountRepository.existsById(userRegisterDto.getLogin())) {
             throw new UserExistsException();

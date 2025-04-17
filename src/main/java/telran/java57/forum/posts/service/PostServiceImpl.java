@@ -68,7 +68,7 @@ public class PostServiceImpl implements PostService{
     @Override
     public PostDto addComment(String postId, String user, NewCommentDto newCommentDto) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new PostNotFoundException(postId));
-        Comment comment = new Comment(newCommentDto.getMessage(),user);
+        Comment comment = new Comment(user, newCommentDto.getMessage());
         post.addComment(comment);
         postRepository.save(post);
         return modelMapper.map(post,PostDto.class);
