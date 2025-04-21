@@ -3,12 +3,13 @@ package telran.java57.forum.posts;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.mindrot.jbcrypt.BCrypt;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import telran.java57.forum.accounting.dao.UserAccountRepository;
@@ -47,6 +48,8 @@ public class PostControllerTest {
     private ObjectMapper objectMapper;
     @Autowired
     private ModelMapper modelMapper;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @AfterEach
     void cleanMongoDB() {
@@ -56,7 +59,7 @@ public class PostControllerTest {
 
     @Test
     void testAddPost() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         NewPostDto newPostDto = new NewPostDto("title", "content", Set.of("tag1", "tag2"));
 
         MockHttpServletRequestBuilder requestBuilder = post("/forum/post/user")
@@ -74,7 +77,7 @@ public class PostControllerTest {
 
     @Test
     void testFindPostById() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         PostDto dto = new PostDto("1000", "title", "content", "user", LocalDateTime.now(), Set.of("tag1", "tag2"), 0, null);
         Post post = modelMapper.map(dto, Post.class);
         postRepository.save(post);
@@ -95,7 +98,7 @@ public class PostControllerTest {
 
     @Test
     void testFindPostByIdNotFound() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         PostDto dto = new PostDto("1000", "title", "content", "user", LocalDateTime.now(), Set.of("tag1", "tag2"), 0, null);
         Post post = modelMapper.map(dto, Post.class);
         postRepository.save(post);
@@ -109,7 +112,7 @@ public class PostControllerTest {
 
     @Test
     void testUpdatePost() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         PostDto dto = new PostDto("1000", "title", "content", "user", LocalDateTime.now(), Set.of("tag1"), 0, null);
         Post post = modelMapper.map(dto, Post.class);
         postRepository.save(post);
@@ -130,7 +133,7 @@ public class PostControllerTest {
 
     @Test
     void testUpdatePostOneOfThemNull() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         PostDto dto = new PostDto("1000", "title", "content", "user", LocalDateTime.now(), Set.of("tag1"), 0, null);
         Post post = modelMapper.map(dto, Post.class);
         postRepository.save(post);
@@ -151,7 +154,7 @@ public class PostControllerTest {
 
     @Test
     void testUpdatePostNotFound() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         PostDto dto = new PostDto("1000", "title", "content", "user", LocalDateTime.now(), Set.of("tag1"), 0, null);
         Post post = modelMapper.map(dto, Post.class);
         postRepository.save(post);
@@ -164,12 +167,12 @@ public class PostControllerTest {
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString("user:1234".getBytes()));
 
         mockMvc.perform(requestBuilder)
-                .andExpect(status().isNotFound());
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void testDeletePost() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         PostDto dto = new PostDto("1000", "title", "content", "user", LocalDateTime.now(), Set.of("tag1"), 0, null);
         Post post = modelMapper.map(dto, Post.class);
         postRepository.save(post);
@@ -186,7 +189,7 @@ public class PostControllerTest {
 
     @Test
     void testDeletePostNotFound() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         PostDto dto = new PostDto("1000", "title", "content", "user", LocalDateTime.now(), Set.of("tag1"), 0, null);
         Post post = modelMapper.map(dto, Post.class);
         postRepository.save(post);
@@ -195,12 +198,12 @@ public class PostControllerTest {
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString("user:1234".getBytes()));
 
         mockMvc.perform(requestBuilder)
-                .andExpect(status().isNotFound());
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void testFindPostsByAuthor() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         PostDto dto = new PostDto("1000", "title", "content", "user", LocalDateTime.now(), Set.of("tag1"), 0, null);
         Post post = modelMapper.map(dto, Post.class);
         postRepository.save(post);
@@ -220,7 +223,7 @@ public class PostControllerTest {
 
     @Test
     void testAddComment() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         PostDto dto = new PostDto("1000", "title", "content", "user", LocalDateTime.now(), Set.of("tag1"), 0, null);
         Post post = modelMapper.map(dto, Post.class);
         postRepository.save(post);
@@ -234,13 +237,14 @@ public class PostControllerTest {
 
         mockMvc.perform(requestBuilder)
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.comments.length()").value(1))
                 .andExpect(jsonPath("$.comments[0].message").value("Nice post!"))
                 .andExpect(jsonPath("$.comments[0].user").value("user"));
     }
 
     @Test
     void testAddCommentNotFound() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         PostDto dto = new PostDto("1000", "title", "content", "user", LocalDateTime.now(), Set.of("tag1"), 0, null);
         Post post = modelMapper.map(dto, Post.class);
         postRepository.save(post);
@@ -258,7 +262,7 @@ public class PostControllerTest {
 
     @Test
     void testFindPostsByTags() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         PostDto dto = new PostDto("1000", "title", "content", "user", LocalDateTime.now(), Set.of("tag1","t2"), 0, null);
         Post post = modelMapper.map(dto, Post.class);
         postRepository.save(post);
@@ -280,7 +284,7 @@ public class PostControllerTest {
 
     @Test
     void testFindPostsByPeriod() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         PostDto dto = new PostDto("1000", "title", "content", "user", LocalDateTime.of(2023, 7, 1,0,0), Set.of("tag1"), 0, null);
         Post post = modelMapper.map(dto, Post.class);
         postRepository.save(post);
@@ -306,7 +310,7 @@ public class PostControllerTest {
 
     @Test
     void addLike() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         PostDto dto = new PostDto("1000", "title", "content", "user", LocalDateTime.now(), Set.of("tag1"), 0, null);
         Post post = modelMapper.map(dto, Post.class);
         postRepository.save(post);

@@ -4,12 +4,11 @@ package telran.java57.forum.accounting;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import telran.java57.forum.accounting.dao.UserAccountRepository;
@@ -36,6 +35,8 @@ public class UserControllerTest {
     private UserAccountRepository userAccountRepository;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @AfterEach
     void cleanMongoDB() {
@@ -109,7 +110,7 @@ public class UserControllerTest {
 
     @Test
     void testGetUser() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
 
         MockHttpServletRequestBuilder requestBuilder = get("/account/user/user")
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString("user:1234".getBytes()));
@@ -124,7 +125,7 @@ public class UserControllerTest {
 
     @Test
     void testGetUserNotFound() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
 
         MockHttpServletRequestBuilder requestBuilder = get("/account/user/user@")
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString("user:1234".getBytes()));
@@ -135,7 +136,7 @@ public class UserControllerTest {
 
     @Test
     void testRemoveUser() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
 
         MockHttpServletRequestBuilder requestBuilder = delete("/account/user/user")
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString("user:1234".getBytes()));
@@ -148,19 +149,19 @@ public class UserControllerTest {
 
     @Test
     void testRemoveUserNotExists() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
 
         MockHttpServletRequestBuilder requestBuilder = delete("/account/user/user@")
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString("user:1234".getBytes()));
 
         mockMvc.perform(requestBuilder)
-                .andExpect(status().isNotFound());
+                .andExpect(status().isForbidden());
 
     }
 
     @Test
     void testUpdateUser() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         UpdateUserDto dto = new UpdateUserDto("NewFirst", "NewLast");
 
         MockHttpServletRequestBuilder requestBuilder = put("/account/user/user")
@@ -176,7 +177,7 @@ public class UserControllerTest {
 
     @Test
     void testUpdateUserNotFound() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         UpdateUserDto dto = new UpdateUserDto("NewFirst", "NewLast");
 
         MockHttpServletRequestBuilder requestBuilder = put("/account/user/user@")
@@ -185,12 +186,12 @@ public class UserControllerTest {
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString("user:1234".getBytes()));
 
         mockMvc.perform(requestBuilder)
-                .andExpect(status().isNotFound());
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void testUpdateUserOneOfThemNull() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
         UpdateUserDto dto = new UpdateUserDto(null, "NewLast");
 
         MockHttpServletRequestBuilder requestBuilder = put("/account/user/user")
@@ -206,8 +207,8 @@ public class UserControllerTest {
 
     @Test
     void testAddRole() throws Exception {
-        UserAccount account = new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith");
-        account.addRole("USER");
+        UserAccount account = new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith");
+        account.addRole("ADMINISTRATOR");
         userAccountRepository.save(account);
 
         MockHttpServletRequestBuilder requestBuilder = put("/account/user/user/role/ADMINISTRATOR")
@@ -223,12 +224,12 @@ public class UserControllerTest {
 
     @Test
     void testDeleteRole() throws Exception {
-        UserAccount account = new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith");
+        UserAccount account = new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith");
         account.addRole("USER");
-        account.addRole("MODERATOR");
+        account.addRole("ADMINISTRATOR");
         userAccountRepository.save(account);
 
-        MockHttpServletRequestBuilder requestBuilder = delete("/account/user/user/role/MODERATOR")
+        MockHttpServletRequestBuilder requestBuilder = delete("/account/user/user/role/ADMINISTRATOR")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString("user:1234".getBytes()));
 
@@ -240,7 +241,7 @@ public class UserControllerTest {
 
     @Test
     void testChangePassword() throws Exception {
-        userAccountRepository.save(new UserAccount("user", BCrypt.hashpw("1234", BCrypt.gensalt()), "John", "Smith"));
+        userAccountRepository.save(new UserAccount("user", passwordEncoder.encode("1234"), "John", "Smith"));
 
         MockHttpServletRequestBuilder requestBuilder = put("/account/password")
                 .contentType(MediaType.APPLICATION_JSON)

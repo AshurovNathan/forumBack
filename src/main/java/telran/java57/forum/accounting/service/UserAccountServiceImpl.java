@@ -1,8 +1,9 @@
 package telran.java57.forum.accounting.service;
 
 import lombok.RequiredArgsConstructor;
-import org.mindrot.jbcrypt.BCrypt;
 import org.modelmapper.ModelMapper;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import telran.java57.forum.accounting.dao.UserAccountRepository;
 import telran.java57.forum.accounting.dto.RolesDto;
@@ -11,13 +12,27 @@ import telran.java57.forum.accounting.dto.UserDto;
 import telran.java57.forum.accounting.dto.UserRegisterDto;
 import telran.java57.forum.accounting.dto.exception.UserExistsException;
 import telran.java57.forum.accounting.dto.exception.UserNotFoundException;
+import telran.java57.forum.accounting.model.Role;
 import telran.java57.forum.accounting.model.UserAccount;
 
 @Service
 @RequiredArgsConstructor
-public class UserAccountServiceImpl implements UserAccountService{
+public class UserAccountServiceImpl implements UserAccountService, CommandLineRunner {
     final UserAccountRepository userAccountRepository;
     final ModelMapper modelMapper;
+    final PasswordEncoder passwordEncoder;
+
+    @Override
+    public void run(String... args) {
+        if(!userAccountRepository.existsById("admin")){
+            String password = passwordEncoder.encode("admin");
+            UserAccount userAccount = new UserAccount("admin",password,"admin","admin");
+            userAccount.addRole(Role.MODERATOR.name());
+            userAccount.addRole(Role.ADMINISTRATOR.name());
+            userAccountRepository.save(userAccount);
+        }
+
+    }
 
     @Override
     public UserDto register(UserRegisterDto userRegisterDto) {
@@ -28,7 +43,7 @@ public class UserAccountServiceImpl implements UserAccountService{
             throw new UserExistsException();
         }
         UserAccount userAccount = modelMapper.map(userRegisterDto, UserAccount.class);
-        String password = BCrypt.hashpw(userRegisterDto.getPassword(), BCrypt.gensalt());
+        String password = passwordEncoder.encode(userRegisterDto.getPassword());
         userAccount.setPassword(password);
         userAccountRepository.save(userAccount);
         return modelMapper.map(userAccount, UserDto.class);
@@ -84,12 +99,9 @@ public class UserAccountServiceImpl implements UserAccountService{
     public void changePassword(String login, String newPassword) {
         UserAccount userAccount = userAccountRepository.findById(login).orElseThrow(UserNotFoundException::new);
         if(newPassword != null){
-            String hashedNewPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+            String hashedNewPassword = passwordEncoder.encode(newPassword);
             userAccount.setPassword(hashedNewPassword);
         }
         userAccountRepository.save(userAccount);
     }
-
-
-
 }

@@ -2,11 +2,11 @@ package telran.java57.service;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mindrot.jbcrypt.BCrypt;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import telran.java57.forum.accounting.dao.UserAccountRepository;
 import telran.java57.forum.accounting.dto.RolesDto;
 import telran.java57.forum.accounting.dto.UpdateUserDto;
@@ -30,14 +30,23 @@ public class TestUserAccountService {
     @Mock
     UserAccountRepository userAccountRepository;
 
+    @Mock
+    PasswordEncoder passwordEncoder;
+
     @InjectMocks
     UserAccountServiceImpl userAccountService;
 
     @Test
     void testUserRegister(){
-        UserRegisterDto userRegisterDto = new UserRegisterDto("asd","123","John","Doe");
-        UserDto userDto = new UserDto("asd","John","Doe", Set.of("USER"));
-        UserAccount userAccount = new UserAccount("asd","123","John","Doe");
+        String encodedPassword = "$2a$10$E8PgpSzUUrAnqMZ0I3gRzGxvn.lSCgchc6T56STnT6dPjQKvNj5T2"; // Example encoded password
+
+        when(passwordEncoder.encode("123")).thenReturn(encodedPassword);
+
+        UserRegisterDto userRegisterDto = new UserRegisterDto("asd", "123", "John", "Doe");
+        UserDto userDto = new UserDto("asd", "John", "Doe", Set.of("USER"));
+        UserAccount userAccount = new UserAccount("asd", encodedPassword, "John", "Doe");
+
+        userAccount.setPassword(encodedPassword);
 
         when(userAccountRepository.existsById("asd")).thenReturn(false);
         when(modelMapper.map(userRegisterDto, UserAccount.class)).thenReturn(userAccount);
@@ -261,22 +270,30 @@ public class TestUserAccountService {
     }
 
     @Test
-    void testChangePassword(){
+    void testChangePassword() {
         String login = "asd";
         String newPassword = "1234";
-        UserAccount userAccount = new UserAccount("asd","123","John","Doe");
+
+        UserAccount userAccount = new UserAccount("asd", "$2a$10$1234567890123456789012", "John", "Doe");
 
         when(userAccountRepository.findById(login)).thenReturn(Optional.of(userAccount));
-        when(userAccountRepository.save(userAccount)).thenReturn(userAccount);
 
-        userAccountService.changePassword(login,newPassword);
+        String encodedPassword = "$2a$10$" + newPassword + "encoded";
+        when(passwordEncoder.encode(newPassword)).thenReturn(encodedPassword);
+        when(passwordEncoder.matches(newPassword, encodedPassword)).thenReturn(true);
+        when(userAccountRepository.save(userAccount)).thenReturn(userAccount);
+        userAccountService.changePassword(login, newPassword);
+        System.out.println("Encoded password: " + userAccount.getPassword());
+
 
         assertTrue(userAccount.getPassword().startsWith("$2a$"));
-        assertTrue(BCrypt.checkpw(newPassword,userAccount.getPassword()));
+        assertTrue(passwordEncoder.matches(newPassword, userAccount.getPassword()));
 
         verify(userAccountRepository).findById(login);
         verify(userAccountRepository).save(userAccount);
     }
+
+
 
     @Test
     void testChangePasswordNull(){
